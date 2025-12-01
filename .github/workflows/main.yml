@@ -1,0 +1,15 @@
+name: main-workflow
+on:
+  push:
+    branches: 
+      - master
+jobs:
+  build:
+    name: build
+    if: github.repository == 'lantrol/MLOPs_Lab1'
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v5
+    - name: install, format, lint and test
+      run: make all
+    
