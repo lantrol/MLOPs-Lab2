@@ -6,10 +6,39 @@ on:
 jobs:
   build:
     name: build
-    if: github.repository == 'lantrol/MLOPs_Lab1'
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v5
     - name: install, format, lint and test
       run: make all
-    
+      
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build   # it is not executed if build fails
+    env:
+          DOCKER_IMAGE: ${{ secrets.DOCKERHUB_USERNAME }}/mlops-lab:latest
+    steps:
+      - name: Checkout repository (with submodules)
+        uses: actions/checkout@v4 
+        with:
+          submodules: recursive
+
+      - name: Set up QEMU (for buildx)
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Build and push
+        uses: docker/build-push-action@v5
+        with:
+          push: true
+          tags: ${{ env.DOCKER_IMAGE }}
+          file: ./Dockerfile
+      - name: Trigger Render Deploy
+        run: curl -X POST "https://api.render.com/deploy/srv-d4nco8khg0os73ckqcvg?key=${{ secrets.RENDER_DEPLOY_HOOK_KEY }}"
